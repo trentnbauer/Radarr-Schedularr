@@ -1,45 +1,58 @@
----
 name: Build and Push to GHCR
+
 on:
   push:
-    branches:
-      - main
-    tags:
-      - v*.*.*
+    branches: [ "main" ]
+    tags: [ 'v*.*.*' ]
     paths-ignore:
-      - "**.md"
-      - docker-compose*.yml
-      - .gitignore
-      - LICENSE
-      - .github/**
+      - '**.md'
+      - 'docker-compose*.yml'
+      - '.gitignore'
+      - 'LICENSE'
+      - '.github/**'
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # --- BULLETPROOF STEP ---
+      # 1. Write raw log to file (avoids variable quote issues)
+      # 2. Flatten newlines to spaces
+      # 3. Output using EOF block (handles special chars safely)
       - name: Get Commit Message
         id: get_msg
         run: |
-          # 1. Get Raw Body (%B)
-          # 2. Use 'tr' to replace newlines (\n) with spaces
-          # 3. Save to output
-          MSG=$(git log -1 --pretty=format:'%B' | tr '\n' ' ')
-          echo "COMMIT_MSG=$MSG" >> "$GITHUB_OUTPUT"
+          git log -1 --format='%B' > raw_msg.txt
+          tr '\n' ' ' < raw_msg.txt > flat_msg.txt
+          
+          echo "COMMIT_MSG<<EOF" >> "$GITHUB_OUTPUT"
+          cat flat_msg.txt >> "$GITHUB_OUTPUT"
+          echo "" >> "$GITHUB_OUTPUT" # Ensure clean end
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Print Debug Message
+        run: echo "Captured: ${{ steps.get_msg.outputs.COMMIT_MSG }}"
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -48,13 +61,15 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=0.1.${{ github.run_number }}
-          labels: >
-            org.opencontainers.image.description=${{
-            steps.get_msg.outputs.COMMIT_MSG }}
-
+          labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
+          annotations: |
+            org.opencontainers.image.description=${{ steps.get_msg.outputs.COMMIT_MSG }}
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -62,5 +77,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           provenance: false
