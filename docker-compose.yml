@@ -8,5 +8,5 @@ services:
       - LIST_NAME=${LIST} ##Script will match list name - NOT case sensitive
       - TZ=${TZ:-Australia/Melbourne}  
       # Format: Minute Hour Day Month DayOfWeek https://crontab.guru/
-      - ON_CRON=${ENABLECRON}
-      - OFF_CRON=${DISABLECRON}
+      - START_DATE=${ENABLECRON}
+      - END_DATE=${DISABLECRON}
