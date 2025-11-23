@@ -28,11 +28,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Cleaned up step: Uses a single line to avoid YAML errors
+      # --- FIXED STEP ---
+      # We split the command to avoid YAML syntax errors with colons
       - name: Get Commit Message
         id: get_msg
         run: |
-          echo "COMMIT_MSG=$(git log -1 --pretty=format:'%B' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          RAW_MSG=$(git log -1 --pretty=format:"%B")
+          CLEAN_MSG=$(echo "$RAW_MSG" | tr '\n' ' ')
+          echo "COMMIT_MSG=$CLEAN_MSG" >> "$GITHUB_OUTPUT"
 
       - name: Print Debug Message
         run: echo "Captured: ${{ steps.get_msg.outputs.COMMIT_MSG }}"
@@ -56,4 +59,17 @@ jobs:
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
           annotations: |
             org.opencontainers.image.description=${{ steps.get_msg.outputs.COMMIT_MSG }}
-            org.opencontainers.image.source=${{ github.event.repository.html_url
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          provenance: false
