@@ -1,12 +1,10 @@
-# THIS PROJECT WAS VIBE CODED BY GEMINI
-sorry not sorry. I don't know Python, so I'm sure there are more efficient ways to do this. It seems to work though
+#### THIS PROJECT WAS VIBE CODED BY GEMINI
 
-# This will automate enabling / disabling your Radarr lists
+# Schedule your Radarr lists!
 Please refer to the example compose file for a Halloween and Christmas schedule. These 2 look for lists named "halloween" and "christmas" - pretty straight forward.
-Personally, I am using [maintainerr](https://maintainerr.info/) to automate deleting content, but setting Clean Library Level to "remove movie and delete files" will delete any movies added by the automated lists when they are disabled.
+Personally, I am using [maintainerr](https://maintainerr.info/) to automate deleting content, but setting Clean Library Level to "remove movie and delete files" will delete any movies added by the automated lists (and any other lists) when they are disabled.
 
-
-##  Environment Variables
+###  Environment Variables
 
 | Variable | Required | Description | Example |
 | :--- | :---: | :--- | :--- |
@@ -16,6 +14,20 @@ Personally, I am using [maintainerr](https://maintainerr.info/) to automate dele
 | `START_DATE` | ✅ | The day the list should turn **ON**. <br> **Format:** `DD/MM` | `01/12` (1st Dec) |
 | `END_DATE` | ✅ | The day the list should turn **OFF**. <br> **Format:** `DD/MM` | `02/01` (2nd Jan) |
 | `TZ` | ❌ | (Optional) Your Timezone. Determines when the "Daily Check" runs (default 8 AM). | `Australia/Melbourne` |
+
+## Why this exists
+I wanted to automate adding and removing themed movies, eg Christmas movies in December.
+
+
+#### List Requirements
+Please ensure your lists meet these requirements for automation:
+* Enable automatic add
+* Enable search on add
+* A unique name (I actually have no idea how the script would handle finding multiple lists. Its not in my use case, so I haven't bothered to test)
+
+I also recommend adding a tag with the lists name, so you know where the movie has come from
+
+
 
 ##  How It Works
 
@@ -37,11 +49,4 @@ This container includes a built-in **Heartbeat** mechanism for Docker.
 * Docker checks this file to ensure the scheduler hasn't frozen.
 * If the script hangs, Docker will mark the container as `unhealthy`.
 
-You can use something like [Autoheal](https://github.com/willfarrell/docker-autoheal) to automate recovering the container
-
-## 🛠 Development
-
-To build this image locally:
-
-```bash
-docker build -t radarr-schedularr .
+You can use something like [Autoheal](https://github.com/willfarrell/docker-autoheal) to automate restarting unhealthy containers
