@@ -29,13 +29,13 @@ jobs:
           fetch-depth: 0
 
       # --- FIXED STEP ---
-      # We split the command to avoid YAML syntax errors with colons
+      # Uses --format=%B to avoid YAML syntax errors with colons
+      # Uses tr to flatten newlines into spaces
       - name: Get Commit Message
         id: get_msg
         run: |
-          RAW_MSG=$(git log -1 --pretty=format:"%B")
-          CLEAN_MSG=$(echo "$RAW_MSG" | tr '\n' ' ')
-          echo "COMMIT_MSG=$CLEAN_MSG" >> "$GITHUB_OUTPUT"
+          MSG=$(git log -1 --format=%B | tr '\n' ' ')
+          echo "COMMIT_MSG=$MSG" >> "$GITHUB_OUTPUT"
 
       - name: Print Debug Message
         run: echo "Captured: ${{ steps.get_msg.outputs.COMMIT_MSG }}"
