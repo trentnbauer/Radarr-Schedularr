@@ -28,19 +28,17 @@ jobs:
         with:
           fetch-depth: 0 
 
-      # --- UPDATED STEP ---
-      - name: Get Full Commit Message
+      # --- THE FIX ---
+      # We fetch the raw body (%B) and use 'tr' to replace newlines with spaces.
+      # This prevents the variable from breaking the workflow.
+      - name: Get Commit Message
         id: get_msg
         run: |
-          # %B gets the raw body (Subject + Extended Description)
-          MSG=$(git log -1 --pretty=format:'%B')
-          
-          # We use a "Here Doc" (EOF) to handle multi-line strings safely in GitHub Actions
-          {
-            echo "COMMIT_MSG<<EOF"
-            echo "$MSG"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          MSG=$(git log -1 --pretty=format:'%B' | tr '\n' ' ')
+          echo "COMMIT_MSG=$MSG" >> "$GITHUB_OUTPUT"
+
+      - name: Print Debug Message
+        run: echo "Captured: ${{ steps.get_msg.outputs.COMMIT_MSG }}"
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -59,7 +57,7 @@ jobs:
             type=raw,value=0.1.${{ github.run_number }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
-          # Use the multi-line commit message here
+          # Apply the description to the Manifest Index (Annotations)
           annotations: |
             org.opencontainers.image.description=${{ steps.get_msg.outputs.COMMIT_MSG }}
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
