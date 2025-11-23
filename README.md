@@ -1,4 +1,5 @@
 #### THIS PROJECT WAS VIBE CODED BY GEMINI
+*Yay more AI slop!*
 
 I wanted to automate adding and removing themed movies, eg Christmas movies added in late November and removed early Jan.
 
