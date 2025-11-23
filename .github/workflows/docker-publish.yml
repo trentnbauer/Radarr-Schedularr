@@ -28,11 +28,19 @@ jobs:
         with:
           fetch-depth: 0 
 
-      - name: Get Commit Message
+      # --- UPDATED STEP ---
+      - name: Get Full Commit Message
         id: get_msg
         run: |
-          MSG=$(git log -1 --pretty=format:'%s')
-          echo "COMMIT_MSG=$MSG" >> "$GITHUB_OUTPUT"
+          # %B gets the raw body (Subject + Extended Description)
+          MSG=$(git log -1 --pretty=format:'%B')
+          
+          # We use a "Here Doc" (EOF) to handle multi-line strings safely in GitHub Actions
+          {
+            echo "COMMIT_MSG<<EOF"
+            echo "$MSG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -50,6 +58,9 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=0.1.${{ github.run_number }}
           labels: |
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+          # Use the multi-line commit message here
+          annotations: |
             org.opencontainers.image.description=${{ steps.get_msg.outputs.COMMIT_MSG }}
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
 
@@ -62,9 +73,6 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          # 1. Apply stickers to the images inside
           labels: ${{ steps.meta.outputs.labels }}
-          # 2. Apply stickers to the outside box (Index)
-          annotations: ${{ steps.meta.outputs.labels }}
-          # 3. Simplify the build (Remove "in-toto" clutter)
+          annotations: ${{ steps.meta.outputs.annotations }}
           provenance: false
