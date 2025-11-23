@@ -4,6 +4,15 @@ on:
   push:
     branches: [ "main" ]
     tags: [ 'v*.*.*' ]
+    # --- NEW SECTION ---
+    paths-ignore:
+      - 'README.md'
+      - 'readme.md'
+      - 'docker-compose.yml'
+      - 'docker-compose-example.yml'
+      - '.gitignore'
+      - 'LICENSE'
+    # -------------------
 
 env:
   REGISTRY: ghcr.io
@@ -33,11 +42,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # 1. Always tag as 'latest'
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            
-            # 2. AUTO-INCREMENT: Creates tags like v0.1.45, v0.1.46, etc.
-            # We hardcode '0.1' and let GitHub fill in the run number.
             type=raw,value=0.1.${{ github.run_number }}
 
       - name: Set up Docker Buildx
