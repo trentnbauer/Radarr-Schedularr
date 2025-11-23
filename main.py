@@ -87,7 +87,7 @@ def daily_enforcement():
     should_be_active = check_season_status()
     
     status_text = "ACTIVE" if should_be_active else "INACTIVE"
-    print(f"🧐 Verdict: List should be {status_text} (Window: {START_DATE} to {END_DATE})")
+    print(f"🧐 Verdict: List {LIST_NAME} should be {status_text} (Window: {START_DATE} to {END_DATE})")
     
     set_list_state(should_be_active)
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     scheduler.add_job(run_heartbeat, 'interval', minutes=1)
     scheduler.add_job(daily_enforcement, CronTrigger(hour=8, minute=0))
     
-    print(f"⏰ Scheduler active. Next check at 08:00 AM.")
+    print(f"⏰ Next check at 08:00 AM.")
     
     try:
         run_heartbeat()
