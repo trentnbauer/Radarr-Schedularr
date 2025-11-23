@@ -10,22 +10,17 @@ from apscheduler.triggers.cron import CronTrigger
 RADARR_URL = os.environ.get("RADARR_URL")
 API_KEY = os.environ.get("RADARR_API_KEY")
 LIST_NAME = os.environ.get("LIST_NAME")
-
-# format: "MM-DD", e.g., "12-01"
 START_DATE = os.environ.get("START_DATE") 
 END_DATE = os.environ.get("END_DATE")
 
-# Basic Validation
 if not all([RADARR_URL, API_KEY, LIST_NAME, START_DATE, END_DATE]):
-    print("Error: Missing config. Check docker-compose.yml")
+    print("Error: Missing config.")
     sys.exit(1)
 
-# --- HEARTBEAT ---
 def run_heartbeat():
     with open("/tmp/healthy", "w") as f:
         f.write(str(time.time()))
 
-# --- CORE LOGIC ---
 def get_list_id(url, headers):
     try:
         res = requests.get(f"{url}/api/v3/importlist", headers=headers)
@@ -48,10 +43,12 @@ def set_list_state(enable_state):
     if not target: return
 
     if target['enabled'] == enable_state:
-        print(f"ℹ️ State Check: List '{LIST_NAME}' is already {action} (Correct).")
+        # Only print if we are actually changing something to keep logs clean
+        # or print a debug message
+        # print(f"ℹ️ Verified: List is correctly {action}.")
         return
 
-    print(f"⚙️ changing state: {action} list '{LIST_NAME}'...")
+    print(f"⚙️ State Mismatch detected! Fixing... {action} list '{LIST_NAME}'...")
     target['enabled'] = enable_state
     try:
         put_url = f"{url}/api/v3/importlist/{target['id']}"
@@ -61,55 +58,37 @@ def set_list_state(enable_state):
         print(f"❌ Update Failed: {e}")
 
 def check_season_status():
-    """
-    Determines if we are currently INSIDE the active window.
-    """
     now = datetime.now()
     current_year = now.year
-    
-    # Parse config dates (append current year)
-    # We assume the config is "12-01", so we make it "2025-12-01"
     d_start = datetime.strptime(f"{current_year}-{START_DATE}", "%Y-%m-%d")
     d_end = datetime.strptime(f"{current_year}-{END_DATE}", "%Y-%m-%d")
 
-    # Handle "Over the New Year" (e.g. Dec 1 to Jan 2)
-    if d_start > d_end:
-        # If today is Jan 1, we compare against Start(Last Year) and End(This Year)
-        # If today is Dec 20, we compare against Start(This Year) and End(Next Year)
-        if now < d_start and now > d_end:
-            # We are in the middle gap (e.g. June), so NOT active
-            return False
+    if d_start > d_end: # Over New Year
+        if now < d_start and now > d_end: return False
         return True
-    else:
-        # Standard range (e.g. June 1 to July 1)
+    else: # Standard Year
         return d_start <= now <= d_end
+
+# Wrapper for the scheduler to run the check
+def daily_enforcement():
+    print("☀️ Daily Check: Verifying list state matches the date...")
+    should_be_active = check_season_status()
+    set_list_state(should_be_active)
 
 if __name__ == "__main__":
     print("🚀 Container Starting...")
     
-    # 1. IMMEDIATE STARTUP CHECK
-    # This fixes your "Started on the 2nd" issue
-    should_be_active = check_season_status()
-    print(f"📅 Date Check: Today is {datetime.now().strftime('%m-%d')}. Active Window: {START_DATE} to {END_DATE}.")
-    print(f"🧐 Verdict: List should be {'ACTIVE' if should_be_active else 'INACTIVE'}.")
-    
-    set_list_state(should_be_active)
+    # 1. IMMEDIATE CHECK
+    daily_enforcement()
 
-    # 2. SCHEDULE FUTURE TRIGGERS
+    # 2. SCHEDULE
     scheduler = BlockingScheduler()
     scheduler.add_job(run_heartbeat, 'interval', minutes=1)
 
-    # Parse Months/Days for Cron
-    s_m, s_d = START_DATE.split("-")
-    e_m, e_d = END_DATE.split("-")
-
-    # Schedule Enable (Runs every year on Start Date at 08:00)
-    scheduler.add_job(set_list_state, CronTrigger(month=s_m, day=s_d, hour=8), args=[True])
-    print(f"⏰ Scheduled: Enable every year on {START_DATE} at 08:00")
-
-    # Schedule Disable (Runs every year on End Date at 08:00)
-    scheduler.add_job(set_list_state, CronTrigger(month=e_m, day=e_d, hour=8), args=[False])
-    print(f"⏰ Scheduled: Disable every year on {END_DATE} at 08:00")
+    # 3. DAILY ENFORCEMENT (Run every day at 08:00 AM)
+    # This replaces the specific date triggers with a daily loop
+    scheduler.add_job(daily_enforcement, CronTrigger(hour=8, minute=0))
+    print(f"⏰ Scheduled: Daily verification at 08:00 AM.")
     
     try:
         run_heartbeat()
