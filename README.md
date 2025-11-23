@@ -1,6 +1,6 @@
 #### THIS PROJECT WAS VIBE CODED BY GEMINI
 
-I wanted to automate adding and removing themed movies, eg Christmas movies in December.
+I wanted to automate adding and removing themed movies, eg Christmas movies added in late November and removed early Jan.
 
 # Schedule your Radarr lists!
 Please refer to the example compose file for a Halloween and Christmas schedule. These 2 look for lists named "halloween" and "christmas" - pretty straight forward.
