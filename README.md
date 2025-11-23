@@ -1,5 +1,7 @@
 #### THIS PROJECT WAS VIBE CODED BY GEMINI
 
+I wanted to automate adding and removing themed movies, eg Christmas movies in December.
+
 # Schedule your Radarr lists!
 Please refer to the example compose file for a Halloween and Christmas schedule. These 2 look for lists named "halloween" and "christmas" - pretty straight forward.
 Personally, I am using [maintainerr](https://maintainerr.info/) to automate deleting content, but setting Clean Library Level to "remove movie and delete files" will delete any movies added by the automated lists (and any other lists) when they are disabled.
@@ -14,9 +16,6 @@ Personally, I am using [maintainerr](https://maintainerr.info/) to automate dele
 | `START_DATE` | ✅ | The day the list should turn **ON**. <br> **Format:** `DD/MM` | `01/12` (1st Dec) |
 | `END_DATE` | ✅ | The day the list should turn **OFF**. <br> **Format:** `DD/MM` | `02/01` (2nd Jan) |
 | `TZ` | ❌ | (Optional) Your Timezone. Determines when the "Daily Check" runs (default 8 AM). | `Australia/Melbourne` |
-
-## Why this exists
-I wanted to automate adding and removing themed movies, eg Christmas movies in December.
 
 
 #### List Requirements
