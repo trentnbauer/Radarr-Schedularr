@@ -26,16 +26,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # <--- CRITICAL FIX: Downloads history so 'git log' works
+          fetch-depth: 0 
 
-      # Capture the commit message
       - name: Get Commit Message
         id: get_msg
         run: |
           MSG=$(git log -1 --pretty=format:'%s')
           echo "COMMIT_MSG=$MSG" >> "$GITHUB_OUTPUT"
 
-      # Debugging: Print it to the log to prove it was captured
       - name: Print Debug Message
         run: echo "The captured description is [${{ steps.get_msg.outputs.COMMIT_MSG }}]"
 
@@ -54,8 +52,8 @@ jobs:
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=0.1.${{ github.run_number }}
+          # We keep 'source' here as a label
           labels: |
-            org.opencontainers.image.description=${{ steps.get_msg.outputs.COMMIT_MSG }}
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
 
       - name: Set up Docker Buildx
@@ -68,3 +66,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # --- THE FIX: Apply description as an ANNOTATION ---
+          annotations: |
+            org.opencontainers.image.description=${{ steps.get_msg.outputs.COMMIT_MSG }}
